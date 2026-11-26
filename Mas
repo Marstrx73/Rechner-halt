@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080912">
+  <title>NOCTURNE · Taschenrechner</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080912;
+      --panel: rgba(17, 19, 34, .96);
+      --button: #20233a;
+      --button-hover: #303550;
+      --text: #f3f0ff;
+      --muted: #898ba6;
+      --violet: #b49aff;
+      --cyan: #79dce8;
+      --red: #ff8291;
+      --line: rgba(183, 170, 255, .17);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding: max(14px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 50% -18%, rgba(116, 77, 185, .3), transparent 55%),
+        radial-gradient(ellipse at 95% 58%, rgba(42, 116, 139, .12), transparent 38%),
+        radial-gradient(ellipse at 8% 95%, rgba(79, 53, 117, .12), transparent 35%),
+        var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, #d8caff99 50%, transparent 100%),
+        radial-gradient(1px 1px at 82% 25%, #c4eaff77 50%, transparent 100%),
+        radial-gradient(1px 1px at 70% 78%, #d8caff77 50%, transparent 100%),
+        radial-gradient(1px 1px at 22% 68%, #c4eaff66 50%, transparent 100%),
+        radial-gradient(1px 1px at 92% 91%, #d8caff66 50%, transparent 100%);
+      content: "";
+      pointer-events: none;
+    }
+
+    .app {
+      width: min(100%, 820px);
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 3px 2px 15px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .logo {
+      width: 41px;
+      height: 41px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(180, 154, 255, .45);
+      border-radius: 14px;
+      color: var(--violet);
+      background: rgba(180, 154, 255, .1);
+      font-size: 22px;
+      box-shadow: 0 0 28px rgba(153, 113, 255, .18);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: .2em;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .12em;
+    }
+
+    .display {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(25, 26, 47, .97), rgba(11, 13, 25, .98));
+      box-shadow: 0 18px 55px rgba(0, 0, 0, .4), inset 0 1px rgba(255,255,255,.035);
+    }
+
+    .display-label, .section-label {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    #expression {
+      min-height: 33px;
+      margin-top: 8px;
+      color: #c3bddc;
+      font-size: clamp(18px, 4vw, 24px);
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 11px 0;
+      background: var(--line);
+    }
+
+    .result-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #result {
+      min-height: 48px;
+      font-size: clamp(32px, 8vw, 45px);
+      font-weight: 650;
+      letter-spacing: -.025em;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    #format-tag {
+      padding-bottom: 5px;
+      color: var(--cyan);
+      font-size: 10px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    #status {
+      min-height: 17px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .section-label { margin: 16px 3px 8px; }
+
+    .utility-keys {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 76px;
+      gap: 8px;
+    }
+
+    .number-keys {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "one two three"
+        "four five six"
+        "seven eight nine"
+        "zero decimal ans";
+      gap: 8px;
+    }
+
+    .operator-keys {
+      display: grid;
+      grid-template-rows: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-width: 0;
+      min-height: 58px;
+      padding: 5px;
+      border: 1px solid rgba(183, 170, 255, .12);
+      border-radius: 15px;
+      color: var(--text);
+      background: linear-gradient(145deg, #242840, #191c30);
+      font: inherit;
+      font-size: clamp(19px, 4vw, 23px);
+      touch-action: manipulation;
+      cursor: pointer;
+      user-select: none;
+      transition: background .12s, transform .08s, border-color .12s;
+    }
+
+    button:active {
+      transform: scale(.96);
+      background: var(--button-hover);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--violet);
+      outline-offset: 2px;
+    }
+
+    .number-keys button {
+      min-height: 62px;
+      background: linear-gradient(145deg, #22263d, #171a2c);
+    }
+
+    .function {
+      color: #d3c7ff;
+      background: linear-gradient(145deg, #2b2747, #201e36);
+      font-size: clamp(13px, 3.5vw, 16px);
+    }
+
+    .operator {
+      color: var(--cyan);
+      background: linear-gradient(145deg, #1d2b3b, #171f30);
+      font-size: 23px;
+    }
+
+    .clear {
+      color: var(--red);
+      background: linear-gradient(145deg, #392433, #291c2c);
+      font-size: 15px;
+    }
+
+    .equals {
+      border-color: transparent;
+      color: #10101b;
+      background: linear-gradient(140deg, #bea7ff, #78dce8);
+      font-size: 25px;
+      font-weight: 700;
+    }
+
+    [data-number="1"] { grid-area: one; }
+    [data-number="2"] { grid-area: two; }
+    [data-number="3"] { grid-area: three; }
+    [data-number="4"] { grid-area: four; }
+    [data-number="5"] { grid-area: five; }
+    [data-number="6"] { grid-area: six; }
+    [data-number="7"] { grid-area: seven; }
+    [data-number="8"] { grid-area: eight; }
+    [data-number="9"] { grid-area: nine; }
+    [data-number="0"] { grid-area: zero; }
+    [data-number="decimal"] { grid-area: decimal; }
+    [data-number="ans"] { grid-area: ans; }
+
+    .lower {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, .75fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .formats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .formats button {
+      min-height: 47px;
+      font-size: 12px;
+    }
+
+    .formats button.selected {
+      border-color: rgba(121, 220, 232, .55);
+      color: var(--cyan);
+      background: rgba(72, 140, 158, .17);
+    }
+
+    .history {
+      min-height: 96px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(17, 20, 34, .82);
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .history-header button {
+      min-height: auto;
+      padding: 4px 7px;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 11px;
+    }
+
+    #history-list {
+      display: grid;
+      gap: 5px;
+      max-height: 145px;
+      overflow: auto;
+    }
+
+    #history-list button {
+      min-height: auto;
+      padding: 8px 9px;
+      border: 0;
+      border-radius: 10px;
+      text-align: left;
+      background: rgba(255,255,255,.035);
+    }
+
+    .history-expression, .history-result {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .history-expression { color: var(--muted); font-size: 11px; }
+    .history-result { margin-top: 3px; font-size: 14px; }
+
+    .empty-history {
+      padding: 8px 2px;
+      color: #777a94;
+      font-size: 12px;
+    }
+
+    dialog {
+      width: min(390px, calc(100vw - 28px));
+      padding: 20px;
+      border: 1px solid rgba(183, 170, 255, .28);
+      border-radius: 20px;
+      color: var(--text);
+      background: #15182a;
+      box-shadow: 0 25px 80px #000b;
+    }
+
+    dialog::backdrop {
+      background: rgba(3, 4, 10, .8);
+      backdrop-filter: blur(5px);
+    }
+
+    dialog h2 { margin: 0 0 7px; font-size: 19px; }
+    dialog p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .fraction-fields {
+      display: grid;
+      grid-template-columns: 1fr 30px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fraction-fields input {
+      width: 100%;
+      min-width: 0;
+      padding: 13px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--text);
+      background: #101320;
+      font: inherit;
+      font-size: 19px;
+      text-align: center;
+    }
+
+    .fraction-slash { color: var(--cyan); font-size: 23px; text-align: center; }
+
+    .dialog-actions {
+      display: flex;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .dialog-actions button { min-height: 48px; flex: 1; font-size: 14px; }
+
+    @media (max-width: 520px) {
+      body { padding-left: 9px; padding-right: 9px; }
+      .keypad { grid-template-columns: minmax(0, 1fr) 62px; gap: 6px; }
+      .number-keys, .operator-keys, .utility-keys { gap: 6px; }
+      .number-keys button, .operator-keys button, .utility-keys button {
+        min-height: 54px;
+        border-radius: 12px;
+      }
+      .lower { grid-template-columns: 1fr; }
+    }
+
+    @media (min-width: 700px) {
+      .number-keys button, .operator-keys button, .utility-keys button {
+        min-height: 66px;
+      }
+      .keypad { grid-template-columns: minmax(0, 1fr) 88px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">✦</div>
+        <div>
+          <h1>NOCTURNE</h1>
+          <div class="subtitle">EXAKTER TASCHENRECHNER</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="display" aria-label="Rechnung und Ergebnis">
+      <div class="display-label">Rechnung</div>
+      <div id="expression" aria-live="polite">Bereit</div>
+      <div class="divider"></div>
+      <div class="result-row">
+        <div id="result" aria-live="polite">0</div>
+        <div id="format-tag">Bruch</div>
+      </div>
+      <div id="status">Exakte Rechnung ohne Rundungsfehler.</div>
+    </section>
+
+    <div class="section-label">Tastatur</div>
+
+    <section class="utility-keys" id="utility-keys" aria-label="Weitere Tasten">
+      <button class="clear" data-action="clear">AC</button>
+      <button class="clear" data-action="backspace" aria-label="Rücktaste">⌫</button>
+      <button class="function" data-action="fraction">a⁄b</button>
+      <button class="function" data-value="%">%</button>
+    </section>
+
+    <section class="keypad" aria-label="Ziffern und Rechenzeichen">
+      <div class="number-keys" id="number-keys">
+        <button data-number="1" data-value="1">1</button>
+        <button data-number="2" data-value="2">2</button>
+        <button data-number="3" data-value="3">3</button>
+        <button data-number="4" data-value="4">4</button>
+        <button data-number="5" data-value="5">5</button>
+        <button data-number="6" data-value="6">6</button>
+        <button data-number="7" data-value="7">7</button>
+        <button data-number="8" data-value="8">8</button>
+        <button data-number="9" data-value="9">9</button>
+        <button data-number="0" data-value="0">0</button>
+        <button data-number="decimal" data-value=".">,</button>
+        <button class="function" data-number="ans" data-action="ans">Ans</button>
+      </div>
+
+      <div class="operator-keys" id="operator-keys" aria-label="Rechenzeichen">
+        <button class="operator" data-value="+">+</button>
+        <button class="operator" data-value="-">−</button>
+        <button class="operator" data-value="*">×</button>
+        <button class="operator" data-value="/">÷</button>
+        <button class="equals" data-action="equals">=</button>
+      </div>
+    </section>
+
+    <div class="lower">
+      <section>
+        <div class="section-label">Ergebnisformat</div>
+        <div class="formats">
+          <button class="function selected" data-format="fraction">Bruch</button>
+          <button class="function" data-format="mixed">Gemischt</button>
+          <button class="function" data-format="decimal">Dezimal</button>
+        </div>
+      </section>
+
+      <section class="history">
+        <div class="history-header">
+          <span>Verlauf</span>
+          <button id="clear-history" type="button">Leeren</button>
+        </div>
+        <div id="history-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="fraction-dialog">
+    <form id="fraction-form">
+      <h2>Bruch eingeben</h2>
+      <p>Zähler und Nenner eingeben. Der Bruch wird automatisch gekürzt.</p>
+      <div class="fraction-fields">
+        <input id="numerator" inputmode="numeric" aria-label="Zähler" placeholder="Zähler" required>
+        <div class="fraction-slash">⁄</div>
+        <input id="denominator" inputmode="numeric" aria-label="Nenner" placeholder="Nenner" required>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="clear" data-close>Abbrechen</button>
+        <button type="submit" class="equals">Einsetzen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = (selector) => document.querySelector(selector);
+      const expressionEl = $("#expression");
+      const resultEl = $("#result");
+      const statusEl = $("#status");
+      const formatTag = $("#format-tag");
+      const historyList = $("#history-list");
+
+      let input = "";
+      let answer = null;
+      let lastExpression = "";
+      let lastAnswer = null;
+      let displayMode = "fraction";
+      let justCalculated = false;
+      let history = loadHistory();
+
+      function gcd(a, b) {
+        a = a < 0n ? -a : a;
+        b = b < 0n ? -b : b;
+        while (b !== 0n) [a, b] = [b, a % b];
+        return a || 1n;
+      }
+
+      function makeFraction(n, d = 1n) {
+        if (d === 0n) throw new Error("Division durch null ist nicht möglich.");
+        if (d < 0n) { n = -n; d = -d; }
+        const divisor = gcd(n, d);
+        return { n: n / divisor, d: d / divisor };
+      }
+
+      const add = (a, b) => makeFraction(a.n * b.d + b.n * a.d, a.d * b.d);
+      const subtract = (a, b) => makeFraction(a.n * b.d - b.n * a.d, a.d * b.d);
+      const multiply = (a, b) => makeFraction(a.n * b.n, a.d * b.d);
+      const divide = (a, b) => makeFraction(a.n * b.d, a.d * b.n);
+      const negate = (a) => makeFraction(-a.n, a.d);
+
+      function parseDecimal(text) {
+        const normalized = String(text).replace(",", ".");
+        if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+          throw new Error("Ungültige Dezimalzahl.");
+        }
+
+        const [whole = "0", decimals = ""] = normalized.split(".");
+        if (whole.length + decimals.length > 100) {
+          throw new Error("Die eingegebene Zahl ist zu lang.");
+        }
+
+        const denominator = 10n ** BigInt(decimals.length);
+        const numerator = BigInt((whole || "0") + decimals);
+        return makeFraction(numerator, denominator);
+      }
+
+      function tokenize(source) {
+        const text = source.replaceAll(",", ".");
+        const tokens = [];
+        let index = 0;
+
+        while (index < text.length) {
+          const char = text[index];
+
+          if (/\s/.test(char)) { index++; continue; }
+
+          if (text.startsWith("Ans", index)) {
+            if (!answer) throw new Error("Es gibt noch kein letztes Ergebnis.");
+            tokens.push({ type: "number", value: answer });
+            index += 3;
+            continue;
+          }
+
+          if (/\d|\./.test(char)) {
+            let raw = "";
+            let foundPoint = false;
+
+            while (index < text.length && /[\d.]/.test(text[index])) {
+              if (text[index] === ".") {
+                if (foundPoint) throw new Error("Ungültige Dezimalzahl.");
+                foundPoint = true;
+              }
+              raw += text[index++];
+            }
+
+            tokens.push({ type: "number", value: parseDecimal(raw) });
+            continue;
+          }
+
+          if ("+-*/%()".includes(char)) {
+            tokens.push({
+              type: char === "(" || char === ")" ? char : "operator",
+              value: char
+            });
+            index++;
+            continue;
+          }
+
+          throw new Error("Unbekanntes Zeichen: " + char);
+        }
+
+        return tokens;
+      }
+
+      function evaluate(source) {
+        const tokens = tokenize(source);
+        let position = 0;
+        const peek = () => tokens[position];
+        const take = () => tokens[position++];
+
+        function primary() {
+          const token = take();
+          if (!token) throw new Error("Die Rechnung ist unvollständig.");
+
+          if (token.type === "number") {
+            return { value: token.value, isPercent: false };
+          }
+
+          if (token.type === "(") {
+            const result = sum();
+            if (!peek() || peek().type !== ")") {
+              throw new Error("Eine schließende Klammer fehlt.");
+            }
+            take();
+            return { value: result.value, isPercent: false };
+          }
+
+          throw new Error("Zahl oder Klammer erwartet.");
+        }
+
+        function postfix() {
+          let result = primary();
+          while (peek() && peek().type === "operator" && peek().value === "%") {
+            take();
+            result = {
+              value: divide(result.value, makeFraction(100n)),
+              isPercent: true
+            };
+          }
+          return result;
+        }
+
+        function unary() {
+          if (peek() && peek().type === "operator" &&
+              (peek().value === "+" || peek().value === "-")) {
+            const sign = take().value;
+            const result = unary();
+            return {
+              value: sign === "-" ? negate(result.value) : result.value,
+              isPercent: result.isPercent
+            };
+          }
+          return postfix();
+        }
+
+        function product() {
+          let left = unary();
+
+          while (peek() && peek().type === "operator" &&
+                 (peek().value === "*" || peek().value === "/")) {
+            const operator = take().value;
+            const right = unary();
+
+            left = {
+              value: operator === "*"
+                ? multiply(left.value, right.value)
+                : divide(left.value, right.value),
+              isPercent: false
+            };
+          }
+
+          return left;
+        }
+
+        function sum() {
+          let left = product();
+
+          while (peek() && peek().type === "operator" &&
+                 (peek().value === "+" || peek().value === "-")) {
+            const operator = take().value;
+            const right = product();
+
+            if (right.isPercent) {
+              const amount = multiply(left.value, right.value);
+              left = {
+                value: operator === "+"
+                  ? add(left.value, amount)
+                  : subtract(left.value, amount),
+                isPercent: false
+              };
+            } else {
+              left = {
+                value: operator === "+"
+                  ? add(left.value, right.value)
+                  : subtract(left.value, right.value),
+                isPercent: false
+              };
+            }
+          }
+
+          return left;
+        }
+
+        if (tokens.length === 0) throw new Error("Gib eine Rechnung ein.");
+
+        const result = sum();
+        if (position !== tokens.length) {
+          throw new Error("Die Rechnung konnte nicht vollständig gelesen werden.");
+        }
+        return result.value;
+      }
+
+      function formatFraction(value) {
+        return value.d === 1n ? String(value.n) : `${value.n}⁄${value.d}`;
+      }
+
+      function formatMixed(value) {
+        const negative = value.n < 0n;
+        const absolute = negative ? -value.n : value.n;
+        const whole = absolute / value.d;
+        const remainder = absolute % value.d;
+        const sign = negative ? "−" : "";
+
+        if (remainder === 0n) return sign + whole;
+        if (whole === 0n) return `${sign}${remainder}⁄${value.d}`;
+        return `${sign}${whole} ${remainder}⁄${value.d}`;
+      }
+
+      function formatDecimal(value) {
+        const negative = value.n < 0n;
+        const absolute = negative ? -value.n : value.n;
+        const whole = absolute / value.d;
+        const remainder = absolute % value.d;
+        const places = 12n;
+        const scale = 10n ** places;
+
+        let decimal = (remainder * scale) / value.d;
+        const leftover = (remainder * scale) % value.d;
+        if (leftover * 2n >= value.d) decimal++;
+
+        let integer = whole;
+        if (decimal >= scale) {
+          integer++;
+          decimal -= scale;
+        }
+
+        const decimalText = decimal
+          .toString()
+          .padStart(Number(places), "0")
+          .replace(/0+$/, "");
+
+        const sign = negative && (integer !== 0n || decimal !== 0n) ? "−" : "";
+        return sign + integer + (decimalText ? "," + decimalText : "");
+      }
+
+      function formatValue(value) {
+        if (displayMode === "mixed") return formatMixed(value);
+        if (displayMode === "decimal") return formatDecimal(value);
+        return formatFraction(value);
+      }
+
+      // Intern bleiben die Rechenzeichen *, / und -.
+      // Nur beim Anzeigen werden daraus ×, ÷ und −.
+      function pretty(source) {
+        return source
+          .replaceAll("*", "×")
+          .replaceAll("/", "÷")
+          .replaceAll("-", "−")
+          .replaceAll(".", ",");
+      }
+
+      function updateFormats() {
+        document.querySelectorAll("[data-format]").forEach((button) => {
+          button.classList.toggle("selected", button.dataset.format === displayMode);
+        });
+
+        formatTag.textContent =
+          displayMode === "fraction" ? "Bruch" :
+          displayMode === "mixed" ? "Gemischt" : "Dezimal";
+      }
+
+      function preview() {
+        expressionEl.textContent = input
+          ? pretty(input)
+          : (lastExpression ? pretty(lastExpression) : "Bereit");
+
+        updateFormats();
+
+        if (!input) {
+          resultEl.textContent = answer ? formatValue(answer) : "0";
+          statusEl.textContent = "Exakte Rechnung ohne Rundungsfehler.";
+          return;
+        }
+
+        try {
+          resultEl.textContent = formatValue(evaluate(input));
+          statusEl.textContent = "Vorschau · Ergebnis automatisch gekürzt";
+        } catch (error) {
+          resultEl.textContent = "…";
+          statusEl.textContent = error.message.includes("Division durch null")
+            ? error.message
+            : "Rechnung fortsetzen …";
+        }
+      }
+
+      function calculate() {
+        if (!input) {
+          if (lastAnswer) {
+            input = lastExpression;
+            answer = lastAnswer;
+            preview();
+            statusEl.textContent = "Letztes Ergebnis wiederhergestellt.";
+          }
+          return;
+        }
+
+        try {
+          const original = input;
+          const value = evaluate(original);
+
+          answer = value;
+          lastAnswer = value;
+          lastExpression = original;
+          justCalculated = true;
+
+          history.unshift({
+            expression: original,
+            n: value.n.toString(),
+            d: value.d.toString()
+          });
+          history = history.slice(0, 10);
+          saveHistory();
+          renderHistory();
+
+          expressionEl.textContent = pretty(original) + " =";
+          resultEl.textContent = formatValue(value);
+          statusEl.textContent = "Exaktes Ergebnis · automatisch gekürzt";
+        } catch (error) {
+          statusEl.textContent = error.message || "Diese Rechnung ist ungültig.";
+        }
+      }
+
+      function clearAll() {
+        input = "";
+        answer = null;
+        justCalculated = false;
+        expressionEl.textContent = "Bereit";
+        resultEl.textContent = "0";
+        statusEl.textContent = "Exakte Rechnung ohne Rundungsfehler.";
+      }
+
+      function backspace() {
+        if (justCalculated) {
+          input = "";
+          answer = null;
+          justCalculated = false;
+        } else {
+          input = input.slice(0, -1);
+        }
+        preview();
+      }
+
+      function appendValue(value) {
+        if (justCalculated && /[\d.(]/.test(value)) {
+          input = "";
+          justCalculated = false;
+        }
+
+        if (value === ".") {
+          const current = input.split(/[+\-*/()%]/).pop() || "";
+          if (current.includes(".")) return;
+          if (!current) value = "0.";
+        }
+
+        if (value === "(" && /[\d.)%]$/.test(input)) input += "*";
+        if (/^\d$/.test(value) && input.endsWith(")")) input += "*";
+
+        input += value;
+        justCalculated = false;
+        preview();
+      }
+
+      function appendOperator(operator) {
+        if (!input) {
+          if (operator === "-") {
+            input = "-";
+            preview();
+          }
+          return;
+        }
+
+        if (/[+\-*/]$/.test(input)) input = input.slice(0, -1);
+        input += operator;
+        justCalculated = false;
+        preview();
+      }
+
+      function insertFraction(nText, dText) {
+        if (!/^[+-]?\d+$/.test(nText) || !/^[+-]?\d+$/.test(dText)) {
+          throw new Error("Bitte Zähler und Nenner als ganze Zahlen eingeben.");
+        }
+
+        const denominator = BigInt(dText);
+        if (denominator === 0n) {
+          throw new Error("Der Nenner darf nicht 0 sein.");
+        }
+
+        const value = makeFraction(BigInt(nText), denominator);
+
+        if (justCalculated) {
+          input = "";
+          justCalculated = false;
+        }
+
+        if (/[\d.)%]$/.test(input)) input += "*";
+
+        // Brüche verwenden intern denselben Divisionsoperator wie die Taste ÷.
+        input += `(${value.n}/${value.d})`;
+        preview();
+      }
+
+      function loadHistory() {
+        try {
+          const saved = JSON.parse(localStorage.getItem("nocturne-history") || "[]");
+          return Array.isArray(saved) ? saved.slice(0, 10) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveHistory() {
+        try {
+          localStorage.setItem("nocturne-history", JSON.stringify(history));
+        } catch {
+          // Der Rechner funktioniert auch ohne lokalen Speicher.
+        }
+      }
+
+      function renderHistory() {
+        historyList.replaceChildren();
+
+        if (!history.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-history";
+          empty.textContent = "Noch keine Rechnungen.";
+          historyList.append(empty);
+          return;
+        }
+
+        history.forEach((item) => {
+          const button = document.createElement("button");
+          button.type = "button";
+
+          const expression = document.createElement("span");
+          expression.className = "history-expression";
+          expression.textContent = pretty(item.expression);
+
+          const result = document.createElement("span");
+          result.className = "history-result";
+          result.textContent = formatValue(makeFraction(BigInt(item.n), BigInt(item.d)));
+
+          button.append(expression, result);
+          button.addEventListener("click", () => {
+            input = item.expression;
+            answer = makeFraction(BigInt(item.n), BigInt(item.d));
+            justCalculated = false;
+            preview();
+          });
+
+          historyList.append(button);
+        });
+      }
+
+      function handleButtonClick(event) {
+        const button = event.target.closest("button");
+        if (!button) return;
+
+        if (button.dataset.value !== undefined) {
+          const value = button.dataset.value;
+          if (["+", "-", "*", "/"].includes(value)) appendOperator(value);
+          else appendValue(value);
+          return;
+        }
+
+        switch (button.dataset.action) {
+          case "clear":
+            clearAll();
+            break;
+          case "backspace":
+            backspace();
+            break;
+          case "equals":
+            calculate();
+            break;
+          case "fraction":
+            $("#numerator").value = "";
+            $("#denominator").value = "";
+            $("#fraction-dialog").showModal();
+            $("#numerator").focus();
+            break;
+          case "ans":
+            if (answer) appendValue("Ans");
+            else statusEl.textContent = "Es gibt noch kein letztes Ergebnis.";
+            break;
+        }
+      }
+
+      $("#utility-keys").addEventListener("click", handleButtonClick);
+      $("#number-keys").addEventListener("click", handleButtonClick);
+      $("#operator-keys").addEventListener("click", handleButtonClick);
+
+      $("#fraction-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        try {
+          insertFraction($("#numerator").value.trim(), $("#denominator").value.trim());
+          $("#fraction-dialog").close();
+        } catch (error) {
+          statusEl.textContent = error.message;
+        }
+      });
+
+      document.querySelectorAll("[data-close]").forEach((button) => {
+        button.addEventListener("click", () => button.closest("dialog").close());
+      });
+
+      document.querySelectorAll("[data-format]").forEach((button) => {
+        button.addEventListener("click", () => {
+          displayMode = button.dataset.format;
+          updateFormats();
+          if (input) preview();
+          else if (answer) resultEl.textContent = formatValue(answer);
+        });
+      });
+
+      $("#clear-history").addEventListener("click", () => {
+        history = [];
+        saveHistory();
+        renderHistory();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.target.matches("input, textarea")) return;
+
+        if ($("#fraction-dialog").open) {
+          if (event.key === "Escape") $("#fraction-dialog").close();
+          return;
+        }
+
+        const aliases = {
+          ",": ".",
+          "×": "*",
+          "x": "*",
+          "X": "*",
+          "÷": "/",
+          ":": "/",
+          "−": "-"
+        };
+
+        if (/^\d$/.test(event.key)) {
+          appendValue(event.key);
+        } else if (aliases[event.key]) {
+          const operator = aliases[event.key];
+          if (["+", "-", "*", "/"].includes(operator)) appendOperator(operator);
+          else appendValue(operator);
+        } else if (event.key === ".") {
+          appendValue(".");
+        } else if (event.key === "+") {
+          appendOperator("+");
+        } else if (["(", ")", "%"].includes(event.key)) {
+          appendValue(event.key);
+        } else if (event.key === "Enter" || event.key === "=") {
+          event.preventDefault();
+          calculate();
+        } else if (event.key === "Backspace") {
+          event.preventDefault();
+          backspace();
+        } else if (event.key === "Escape") {
+          clearAll();
+        }
+      });
+
+      updateFormats();
+      renderHistory();
+      preview();
+    })();
+  </script>
+</body>
+</html>
